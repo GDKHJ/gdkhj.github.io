@@ -1,0 +1,27 @@
+---
+import Header from "../components/Header.astro";
+import Hero from "../components/Hero.astro";
+
+const {
+  title = "권혁준 · Portfolio & Notes",
+  heroTitle = "권혁준 · Portfolio & Notes",
+  heroSub = "Unity · VR · Multiplayer · Backend",
+  showHero = true,
+} = Astro.props;
+---
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+	<style is:global>
+  	@import "../styles/global.css";  /* 상대 경로로 불러오기 */
+	</style>
+
+  </head>
+  <body>
+    {showHero && <Hero title={heroTitle} sub={heroSub} />}
+    <Header />
+    <slot />
+  </body>
+</html>

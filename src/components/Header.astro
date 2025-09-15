@@ -1,0 +1,18 @@
+---
+const path = Astro.url.pathname;
+const links = [
+  { href: '/',         label: 'Introduction' },
+  { href: '/study/',   label: 'Study' },
+  { href: '/project/', label: 'Project' },
+  { href: '/contact/', label: 'Contact' },
+];
+---
+<nav class="navbar">
+  <div class="container">
+    <div class="nav">
+      {links.map(l => (
+        <a href={l.href} class:list={{ active: path === l.href }}>{l.label}</a>
+      ))}
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,33 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+const title = "Mimic";
+const tags = ["Unity", "2D", "PC"];
+const heroImg = "/mimic_thumbnail.png";
+---
+
+<BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
+
+<main class="container">
+  <section class="section">
+    {heroImg && <img src={heroImg} alt={title} class="detail-hero" />}
+    <article class="prose">
+      <h3>개요</h3>
+      <p>Unity로 제작한 뱀서라이크 데모입니다.</p>
+
+      <h3>핵심 포인트</h3>
+      <ul>
+        <li>매 판 다른 조합을 선택할 수 있는 로그라이크 요소</li>
+        <li>강력한 4종의 보스와 4명의 동료</li>
+        <li>동료들과 능력의 강화</li>
+        <li>여신이 주는 강력한 축복</li>
+        <li>코인으로 강해지는 모험가의 능력</li>
+      </ul>
+
+      <h3>링크</h3>
+      <ul>
+        <li><a href="https://github.com/gdkhj" target="_blank">GitHub</a></li>
+        <li>데모 영상/GIF</li>
+      </ul>
+    </article>
+  </section>
+</main>

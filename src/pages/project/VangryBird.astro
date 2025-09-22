@@ -1,0 +1,420 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+// 미디어 경로
+const hero       = "/Image/vangry_thumbnail.png";   // 대표 이미지
+const shot1      = "/Image/VB_Screen1.png";
+const shot2      = "/Image/VB_Screen2.png";
+const shot3      = "/Image/VB_Screen3.png";
+const codeTopImg = "/Image/VB_CodeDiagram.png";     // 코드 위 다이어그램/이미지
+
+const title  = "Vangry Bird";
+const tags   = ["Unity", "VR", "Multiplayer"];
+const period = "2025.06 ~ 2025.09 (팀, 12주)";
+const youtubeId = "PY6oGjiwtvI";  // 유튜브 ID (t=1s 파라미터는 생략)
+
+const codeBird = String.raw`using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody))]
+public class Bird : MonoBehaviour
+{
+    [Header("Damage by Impact")]
+    [Tooltip("충돌 임펄스에 곱해질 스케일")]
+    public float damageScale = 0.6f;
+
+    [Tooltip("이 값 미만의 임펄스는 무시")]
+    public float minDamageImpulse = 2f;
+
+    [Header("Auto Despawn (no movement)")]
+    [Tooltip("거의 멈춘 상태가 이 시간 이상 지속되면 제거")]
+    public float sleepTimeToDestroy = 5f;
+
+    [Tooltip("이 속도 미만이면 '거의 멈춤'으로 판단")]
+    public float sleepSpeedThreshold = 0.15f;
+
+    Rigidbody rb;
+    float sleepTimer;
+    bool isDespawning;
+
+    public static int AliveCount { get; private set; }
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+    }
+
+    public void OnLaunched() => sleepTimer = 0f;
+
+    void Update()
+    {
+        if (isDespawning) return;
+
+        Vector3 v = rb.velocity; 
+        float speedSqr = v.sqrMagnitude;
+        bool almostStopped = rb.IsSleeping() || speedSqr < sleepSpeedThreshold * sleepSpeedThreshold;
+
+        if (almostStopped) sleepTimer += Time.deltaTime;
+        else sleepTimer = 0f;
+
+        if (sleepTimer >= sleepTimeToDestroy)
+            Despawn();
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if (isDespawning) return;
+
+        if (collision.collider.CompareTag("OutOfBounds"))
+        {
+            Despawn();
+            return;
+        }
+
+        float impulse = collision.impulse.magnitude;
+        if (impulse >= minDamageImpulse &&
+            collision.collider.TryGetComponent<Damageable>(out var dmgable))
+        {
+            float damage = impulse * damageScale;
+            Vector3 hitPoint = collision.GetContact(0).point;
+            dmgable.ApplyDamage(damage, hitPoint);
+        }
+    }
+
+    void Despawn()
+    {
+        if (isDespawning) return;
+        isDespawning = true;
+        Destroy(gameObject);
+    }
+
+    void OnEnable()  => AliveCount++;
+    void OnDisable() => AliveCount = Mathf.Max(0, AliveCount - 1);
+}`;
+const codeBootstrap = String.raw`using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Unity.Services.Core;
+using Unity.Multiplayer;
+using Game.Client.Network;
+
+#if ENABLE_UCS_SERVER
+using Unity.Services.Multiplay;
+#endif
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+namespace Game.Shared.Network
+{
+    public class InGameNetworkBootstrap : MonoBehaviour
+    {
+        [SerializeField] bool _localTest = false;
+        [SerializeField] NetworkManager _networkManager;
+        [SerializeField] UnityTransport _transport;
+
+        IAllocationProvider allocationProvider;
+        const int AllocationWaitSeconds = 30;
+
+        async void Start() => await InitializeAsync();
+
+        async Task InitializeAsync()
+        {
+            if (!_localTest)
+            {
+                try { await UnityServices.InitializeAsync(); }
+                catch (Exception ex) { Debug.LogException(ex); return; }
+            }
+
+            allocationProvider = _localTest
+                ? new MockAllocationProvider()
+                : new MultiplayAllocationProvider();
+
+            MultiplayerRoleFlags roleflags = MultiplayerRolesManager.ActiveMultiplayerRoleMask;
+            bool isServer = roleflags.HasFlag(MultiplayerRoleFlags.Server);
+            bool isClient = roleflags.HasFlag(MultiplayerRoleFlags.Client);
+
+            Debug.Log($"[Bootstrap] RoleFlags = {roleflags}");
+
+            if ((isServer && isClient) || (!isServer && !isClient))
+            {
+#if UNITY_EDITOR
+                EditorApplication.ExitPlaymode();
+#else
+                Application.Quit();
+#endif
+                return;
+            }
+
+            if (isServer)
+            {
+                Debug.Log("[Bootstrap] Role : Server (Dedicated)");
+                SceneManager.LoadScene("Server", LoadSceneMode.Additive);
+                await StartServerAsync();
+            }
+            else if (isClient)
+            {
+                Debug.Log("[Bootstrap] Role : Client");
+                SceneManager.LoadScene("Test_InGameNetwork", LoadSceneMode.Additive);
+                await StartClientAsync();
+            }
+        }
+
+#if UNITY_SERVER || ENABLE_UCS_SERVER
+        async Task StartServerAsync()
+        {
+            _transport.SetConnectionData(allocationProvider.ipAddress,
+                                         allocationProvider.port,
+                                         allocationProvider.ipAddress);
+
+            if (!_networkManager.StartServer())
+                throw new Exception("Failed to start server.");
+
+            _networkManager.OnClientConnectedCallback += OnClientConnected;
+            _networkManager.OnClientDisconnectCallback += OnClientDisconnected;
+
+#if ENABLE_UCS_SERVER
+            if (!_localTest)
+                await MultiplayService.Instance.ReadyServerForPlayersAsync();
+#endif
+
+            Debug.Log("[Bootstrap] Server started");
+        }
+
+        void OnClientConnected(ulong clientId) => Debug.Log($"Client {clientId} connected");
+        void OnClientDisconnected(ulong clientId) => Debug.Log($"Client {clientId} disconnected");
+#endif
+
+#if UNITY_CLIENT
+        async Task StartClientAsync()
+        {
+            if (_localTest)
+            {
+                _transport.SetConnectionData("127.0.0.1", 7777);
+                if (!_networkManager.StartClient())
+                    throw new Exception("Failed to connect to local server.");
+                Debug.Log("[Bootstrap] Client started (local)");
+                return;
+            }
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(AllocationWaitSeconds));
+            bool allocationReady = await WaitForAllocationReady(cts.Token);
+
+            if (!allocationReady) { Debug.LogError("Timeout waiting for allocation ready"); return; }
+
+            string serverIp = MultiplayMatchBlackboard.allocation.IpAddress;
+            ushort serverPort = (ushort)MultiplayMatchBlackboard.allocation.GamePort;
+
+            Debug.Log($"=== Connection Attempt ===\nIP: {serverIp}\nPort: {serverPort}\nAllocID: {MultiplayMatchBlackboard.allocation.AllocationId}");
+
+            _transport.SetConnectionData(serverIp, serverPort);
+            await Task.Delay(1000);
+
+            if (!_networkManager.StartClient())
+                throw new Exception("Failed to connect to allocated server.");
+
+            Debug.Log("[Bootstrap] Client started (allocated)");
+        }
+
+        async Task<bool> WaitForAllocationReady(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                if (MultiplayMatchBlackboard.allocation != null &&
+                    MultiplayMatchBlackboard.allocation.IsReady)
+                {
+                    return true;
+                }
+                await Task.Delay(500, ct);
+            }
+            return false;
+        }
+#endif
+    }
+}`;
+---
+
+<BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
+
+<main class="container">
+  <!-- 대표 이미지 -->
+  <section class="section">
+    <img src={hero} alt={title} class="detail-hero" />
+  </section>
+
+  <!-- 개요 -->
+  <section class="section">
+    <h3>개요</h3>
+    <p>
+      VR 기반 Angry Birds 스타일의 물리 퍼즐 게임 프로토타입입니다.
+      Unity Netcode for GameObjects + Unity Cloud Multiplay를 이용해
+      <b>멀티플레이 네트워크</b> 환경까지 통합 실험했습니다.
+    </p>
+  </section>
+
+  <!-- 개발 기간 -->
+  <section class="section">
+    <h3>개발 기간</h3>
+    <p class="muted">{period}</p>
+  </section>
+
+  <!-- 스크린샷 3개 -->
+  <section class="section">
+    <h3>스크린샷</h3>
+    <div class="media-grid">
+      <figure>
+        <img src={shot1} alt="Stage 전경" loading="lazy" />
+        <figcaption>Stage 전경</figcaption>
+      </figure>
+      <figure>
+        <img src={shot2} alt="발사 장면" loading="lazy" />
+        <figcaption>발사 장면</figcaption>
+      </figure>
+      <figure>
+        <img src={shot3} alt="피격 후 반응" loading="lazy" />
+        <figcaption>피격 후 반응</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 코드 위 이미지 -->
+  <section class="section">
+    <figure style="text-align:center;">
+      <img src={codeTopImg} alt="구조 다이어그램"
+           style="width:70%;max-width:700px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);" />
+      <figcaption class="muted" style="margin-top:8px;">게임 오브젝트 & 네트워크 구조 다이어그램</figcaption>
+    </figure>
+  </section>
+
+  <!-- 코드 -->
+  <section class="section">
+    <h3>핵심 코드</h3>
+    <p class="muted">발사체 Bird 동작과 네트워크 부트스트랩 초기화입니다.</p>
+
+    <details class="code-block" open>
+      <summary>Bird.cs – 발사체/데미지 처리</summary>
+      <pre><code class="language-csharp">{codeBird}</code></pre>
+    </details>
+
+    <details class="code-block">
+      <summary>InGameNetworkBootstrap.cs – 서버/클라 초기화</summary>
+      <pre><code class="language-csharp">{codeBootstrap}</code></pre>
+    </details>
+  </section>
+
+  <!-- YouTube -->
+  <section class="section">
+    <h3>플레이 영상</h3>
+    <div class="yt-wrap">
+      <iframe
+        src={`https://www.youtube.com/embed/${youtubeId}`}
+        title="Vangry Bird Demo Video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+        loading="lazy"></iframe>
+    </div>
+  </section>
+</main>
+
+<style>
+  /* ===== Tokens ===== */
+  :root{
+    --fg:#0f172a;
+    --muted:#6b7280;
+    --line:#eceff3;
+    --card:#ffffff;
+    --shadow:0 10px 30px rgba(2,6,23,.07);
+    --radius:14px;
+    --radius-lg:16px;
+  }
+
+  .section{ padding:72px 0; }
+  h3{
+    font-size:22px; margin:0 0 20px; letter-spacing:.1px;
+    position:relative; display:inline-block; padding-right:8px;
+  }
+  h3::after{
+    content:""; position:absolute; left:0; bottom:-8px; height:3px; width:32px;
+    background:linear-gradient(90deg,#ffd400,transparent 70%);
+    border-radius:4px;
+  }
+  .muted{ color:var(--muted); }
+  .section p{ line-height:1.85; }
+
+  /* ===== 대표 이미지 (상단) ===== */
+  .detail-hero{
+    width:100%; max-height:420px; object-fit:cover;
+    border-radius:var(--radius-lg); box-shadow:var(--shadow);
+  }
+
+  /* ===== 스크린샷 3개: 규격 통일 =====
+     - 동일한 비율(16:9)로 크롭
+     - 데스크톱 3열, 모바일 1열 */
+  .media-grid{
+    display:grid; gap:24px;
+    grid-template-columns:1fr; align-items:start;
+  }
+  @media (min-width: 980px){
+    .media-grid{ grid-template-columns: repeat(3, 1fr); }
+  }
+  .media-grid figure{ margin:0; }
+  .media-grid img{
+    width:100%;
+    aspect-ratio: 16 / 9;   /* 규격 통일 */
+    object-fit: cover;      /* 넘치는 영역은 자연스럽게 크롭 */
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    display:block;
+  }
+  .media-grid figcaption{
+    margin-top:10px; color:var(--muted); font-size:14px; text-align:center;
+  }
+
+  /* ===== 코드 위 이미지(다이어그램) =====
+     - 섹션 내 중앙 정렬 + 반응형 폭 제어 */
+  .code-top-figure{ text-align:center; }
+  .code-top-figure img{
+    width:68%; max-width:760px;   /* 살짝 줄여 보기 좋게 */
+    border-radius:12px; box-shadow:var(--shadow);
+  }
+  .code-top-figure figcaption{ margin-top:8px; color:var(--muted); }
+
+  /* ===== 코드 블록 (details) ===== */
+  details.code-block{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  details.code-block + details.code-block{ margin-top:16px; }
+  details.code-block > summary{
+    cursor:pointer; padding:14px 16px; font-weight:700; list-style:none;
+    position:relative; background:#fafafa; border-bottom:1px solid var(--line);
+  }
+  details.code-block > summary::-webkit-details-marker{ display:none; }
+  details.code-block > summary::after{
+    content:"▾"; position:absolute; right:14px; top:12px; font-size:16px; color:#9aa3af;
+    transition:transform .15s ease;
+  }
+  details[open].code-block > summary::after{ transform:rotate(180deg); }
+
+  details.code-block pre{
+    margin:0; max-width:100%; overflow:auto;
+    background:#0b1220; color:#e6edf3;
+    padding:18px 18px; font-size:14px; line-height:1.65;
+  }
+  details.code-block code{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* ===== YouTube 임베드 ===== */
+  .yt-wrap{
+    position: relative; width: 100%; aspect-ratio: 16 / 9;
+    border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.06);
+    background:#000;
+  }
+  .yt-wrap > iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+</style>

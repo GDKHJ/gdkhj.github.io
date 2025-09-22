@@ -1,33 +1,331 @@
----
-import BaseLayout from "../../layouts/BaseLayout.astro";
+--- 
+import BaseLayout from "../../layouts/BaseLayout.astro"; 
+
+// 섹션에 쓸 미디어 (public 루트 기준 경로)
+const hero = "/mimic_thumbnail.png";   // ← public에서 직접
+const gif1 = "/Image/Mimic_Time.gif";
+const gif2 = "/Image/Mimic_BossCombat.gif";
+const img1 = "/Image/MimicImage1.png";
+const img2 = "/Image/MimicImage2.png";
+
 const title = "Mimic";
-const tags = ["Unity", "2D", "PC"];
-const heroImg = "/mimic_thumbnail.png";
+const tags  = ["Unity", "2D", "PC"];
+const period = "2025.03 ~ 2025.06 (개인, 10주)";
+
+const codeArrow = String.raw`// Active Ability 중 하나인 "화살" 발사 코드
+// 가까운 적을 탐색 → 화살 소환 → 발사, 능력 레벨업 → 쿨타임, 데미지 스케일 → 적용
+// 레벨,스케일링,쿨다운,타깃팅,풀링 연계
+
+public class ArrowLauncher : MonoBehaviour
+{
+    [SerializeField] private int maxLevel = 5;
+
+    private float interval;
+    private int currentDamage;
+
+    private float timer;
+    private int level = 1;
+
+    private void Awake()
+    {
+        if (maxLevel < 1) maxLevel = 1;
+        level = Mathf.Clamp(level, 1, maxLevel);
+
+        ApplyStats();
+    }
+
+    private void Update() // 쿨다운, 탐색, 발사
+    {
+        timer += Time.deltaTime;
+
+        if (timer >= interval)
+        {
+            timer = 0f;
+
+            Transform target = FindNearestEnemy();
+            if (target != null)
+            {
+                Vector2 dir = (target.position - transform.position).normalized;
+                Shoot(dir);
+            }
+        }
+    }
+
+    public void LevelUp()
+    {
+        if (level >= maxLevel)
+            return;
+
+        level++;
+        ApplyStats();
+    }
+
+    private void ApplyStats() // 쿨타임, 데미지 스케일링
+    {
+        currentDamage = Mathf.RoundToInt(Mathf.Lerp(5, 10, (level - 1) / (float)(maxLevel - 1)));
+        interval = Mathf.Lerp(0.5f, 0.1f, (level - 1) / (float)(maxLevel - 1));
+    }
+
+    private void Shoot(Vector2 dir) // 풀에서 투사체 소환
+    {
+        const string poolKey = "Arrow";
+        GameObject arrow = ProjectilePoolManager.Instance.Spawn(poolKey, transform.position, Quaternion.identity);
+
+        if (arrow != null && arrow.TryGetComponent<ArrowProjectile>(out var proj))
+        {
+            proj.Initialize(dir, currentDamage, poolKey);
+        }
+    }
+
+    private Transform FindNearestEnemy() // 가장 가까운 적 탐색
+    {
+        var enemies = AliveEnemyManager.Instance.Enemies; // 탐색해야하는 대상 줄이기
+        if (enemies == null || enemies.Count == 0)
+            return null;
+
+        Transform nearest = null;
+        float minDistance = float.MaxValue;
+        Vector3 currentPos = transform.position;
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null || !enemy.gameObject.activeInHierarchy)
+                continue;
+
+            float dist = Vector3.SqrMagnitude(enemy.position - currentPos);
+            if (dist < minDistance)
+            {
+                minDistance = dist;
+                nearest = enemy;
+            }
+        }
+
+        return nearest;
+    }
+}`;
+
+const codeEnemyManager = String.raw`public class Enemy : MonoBehaviour
+{
+    // ...
+
+    private void OnEnable()
+    {
+        AliveEnemyManager.Instance.Register(transform);
+    }
+
+    private void OnDisable()
+    {
+        AliveEnemyManager.Instance.Unregister(transform);
+    }
+
+    // ...
+}
+
+public class AliveEnemyManager : MonoBehaviour
+{
+    public static AliveEnemyManager Instance { get; private set; }
+
+    private readonly List<Transform> aliveEnemies = new();
+
+    public IReadOnlyList<Transform> Enemies => aliveEnemies;
+
+    private void Awake()
+    {
+        // 싱글톤 보일러플레이트 (프로젝트 컨벤션에 맞게 조정 가능)
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        // 필요 시 DontDestroyOnLoad(this);
+    }
+
+    public void Register(Transform enemy)
+    {
+        if (enemy != null && !aliveEnemies.Contains(enemy))
+            aliveEnemies.Add(enemy);
+    }
+
+    public void Unregister(Transform enemy)
+    {
+        aliveEnemies.Remove(enemy);
+    }
+}`;
 ---
 
 <BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
 
 <main class="container">
   <section class="section">
-    {heroImg && <img src={heroImg} alt={title} class="detail-hero" />}
-    <article class="prose">
-      <h3>개요</h3>
-      <p>Unity로 제작한 뱀서라이크 데모입니다.</p>
+    <!-- 상단 대표 이미지: public에서 직접 -->
+    <img src={hero} alt={title} class="detail-hero" />
+  </section>
 
-      <h3>핵심 포인트</h3>
-      <ul>
-        <li>매 판 다른 조합을 선택할 수 있는 로그라이크 요소</li>
-        <li>강력한 4종의 보스와 4명의 동료</li>
-        <li>동료들과 능력의 강화</li>
-        <li>여신이 주는 강력한 축복</li>
-        <li>코인으로 강해지는 모험가의 능력</li>
-      </ul>
+  <!-- 개요 -->
+  <section class="section">
+    <h3>개요</h3>
+    <p>
+      Unity로 제작한 뱀서라이크(로그라이크 슈터) 데모입니다. 매 판 다른 빌드를 구성하며,
+      동료/보스/축복 시스템으로 파워 곡선을 설계했습니다.
+    </p>
+  </section>
 
-      <h3>링크</h3>
-      <ul>
-        <li><a href="https://github.com/gdkhj" target="_blank">GitHub</a></li>
-        <li>데모 영상/GIF</li>
-      </ul>
-    </article>
+  <!-- 개발 기간 -->
+  <section class="section">
+    <h3>개발 기간</h3>
+    <p class="muted">{period}</p>
+  </section>
+
+  <!-- GIF 2개 -->
+  <section class="section">
+    <h3>플레이 데모</h3>
+    <div class="media-grid">
+      <figure>
+        <img src={gif1} alt="웨이브 전투 데모" />
+        <figcaption>웨이브 전투 / 빌드업</figcaption>
+      </figure>
+      <figure>
+        <img src={gif2} alt="보스 전투 데모" />
+        <figcaption>보스 전투 / 패턴 대응</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 이미지 2개 -->
+  <section class="section">
+    <h3>시스템 스냅샷</h3>
+    <div class="media-grid">
+      <figure>
+        <img src={img1} alt="스킬 트리 화면" />
+        <figcaption>스킬/축복 트리</figcaption>
+      </figure>
+      <figure>
+        <img src={img2} alt="인게임 UI 화면" />
+        <figcaption>인게임 UI &amp; HUD</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 핵심 코드 -->
+  <section class="section">
+    <h3>핵심 코드</h3>
+    <p class="muted">빌드 조합(능력 시너지)과 적 스폰을 담당하는 핵심 스니펫입니다.</p>
+
+    <details class="code-block" open>
+      <summary>ArrowLauncher.cs – 액티브 능력(화살) 발사</summary>
+      <pre><code class="language-csharp">{codeArrow}</code></pre>
+    </details>
+
+    <!-- 요청: SpawnDirector 섹션 제거 완료 -->
+
+  </section>
+
+  <!-- 시행착오 -->
+  <section class="section">
+    <h3>시행착오 &amp; 개선</h3>
+
+    <!-- 요청: 이미지들 제거 후 코드로 교체 -->
+    <details class="code-block" open>
+      <summary>Enemy / AliveEnemyManager – 살아있는 적 관리</summary>
+      <pre><code class="language-csharp">{codeEnemyManager}</code></pre>
+    </details>
+
+    <ul>
+      <li><b>문제</b>: 타깃 탐색 시 씬 전체 탐색 비용이 커지고, 비활성/파괴된 오브젝트가 섞여 정확도가 떨어짐.</li>
+      <li><b>개선</b>: <code>AliveEnemyManager</code>로 “현재 살아있는 적”만 관리/조회 → 탐색 비용 &amp; GC 감소.</li>
+      <li><b>효과</b>: <code>ArrowLauncher</code>의 최근접 탐색이 <code>Enemies</code> 리스트 기반으로 상수시간 접근(리스트 순회)으로 단순화되어 프레임 안정화.</li>
+    </ul>
+  </section>
+
+  <!-- 링크 -->
+  <section class="section">
+    <h3>링크</h3>
+    <ul>
+      <li>
+        <a href="https://drive.google.com/drive/folders/1FJtWonGf2Tnsdsva6j0_6VJqMQKPBU7N?usp=sharing" target="_blank" rel="noopener">
+          프로토타입 v0.4.0 (Google Drive)
+        </a>
+      </li>
+      <li>데모 영상/GIF: 상단 “플레이 데모” 참조</li>
+    </ul>
   </section>
 </main>
+
+<style>
+  /* ===== Tokens ===== */
+  :root{
+    --fg:#0f172a;
+    --muted:#6b7280;
+    --line:#eceff3;
+    --card:#ffffff;
+    --shadow:0 10px 30px rgba(2,6,23,.07);
+    --radius:14px;
+    --radius-lg:16px;
+  }
+
+  /* 공통 컨테이너/섹션은 기존 클래스 사용 */
+  .section{ padding:70px 0; }
+  h3{
+    font-size:22px; margin:0 0 20px; letter-spacing:.1px;
+    position:relative; display:inline-block; padding-right:8px;
+  }
+  h3::after{
+    content:""; position:absolute; left:0; bottom:-8px; height:3px; width:32px;
+    background:linear-gradient(90deg,#ffd400,transparent 70%);
+    border-radius:4px;
+  }
+  .muted{ color:var(--muted); }
+
+  /* 대표 이미지 */
+  .detail-hero{
+    width:100%; max-height:420px; object-fit:cover;
+    border-radius:var(--radius-lg); box-shadow:var(--shadow);
+  }
+
+  /* 플레이 데모/시스템 스냅샷: 동일한 그리드 미학 적용 */
+  .media-grid{
+    display:grid; gap:24px;
+    grid-template-columns:1fr;           /* 모바일 1열 */
+    align-items:start;
+  }
+  @media (min-width: 900px){
+    .media-grid{ grid-template-columns: repeat(2, 1fr); }  /* 데스크톱 2열 */
+  }
+  .media-grid figure{ margin:0; text-align:center; }
+  .media-grid img{
+    width:100%; border-radius:var(--radius); box-shadow:var(--shadow);
+    display:block;
+  }
+  .media-grid figcaption{
+    margin-top:10px; color:var(--muted); font-size:14px;
+  }
+
+  /* 코드 블록 (details) */
+  details.code-block{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  details.code-block + details.code-block{ margin-top:16px; }
+  details.code-block > summary{
+    cursor:pointer; padding:14px 16px; font-weight:700; list-style:none;
+    position:relative; background:#fafafa; border-bottom:1px solid var(--line);
+  }
+  details.code-block > summary::-webkit-details-marker{ display:none; }
+  details.code-block > summary::after{
+    content:"▾"; position:absolute; right:14px; top:12px; font-size:16px; color:#9aa3af;
+    transition:transform .15s ease;
+  }
+  details[open].code-block > summary::after{ transform:rotate(180deg); }
+
+  details.code-block pre{
+    margin:0; max-width:100%; overflow:auto;
+    background:#0b1220; color:#e6edf3;
+    padding:18px 18px; font-size:14px; line-height:1.65;
+  }
+  details.code-block code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* 본문 가독성 */
+  .section p{ line-height:1.85; }
+  ul{ line-height:1.8; }
+</style>

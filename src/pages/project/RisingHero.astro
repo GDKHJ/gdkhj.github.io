@@ -1,0 +1,413 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+// 미디어 경로 (public/ 기준 절대경로)
+const hero  = "/Image/risinghero_thumbnail.png";
+const gif1  = "/Image/RH_Gameplay1.gif";
+const gif2  = "/Image/RH_Gameplay2.gif";
+const gif3  = "/Image/RH_Gameplay3.gif";
+const codeTopImage = "/Image/RH_SkillSystem.png";  // 코드 위 이미지
+
+// ▼ 시행착오 섹션에 쓸 이미지(네 이미지로 교체)
+const imgAttemptSO = "/Image/RH_Attempt_SO.png";       // 무기 SO/인스펙터 스샷
+const imgAttemptRow = "/Image/RH_Icons_Row.png";       // 상단 아이콘 가로줄(선택)
+const imgCSVShot   = "/Image/RH_SkillDataCSV.png";     // CSV 스샷
+const imgDiagram   = "/Image/RH_SkillSystem_Diagram.png"; // 시스템 다이어그램
+
+const title = "Rising Hero";
+const tags  = ["Unity", "2D", "Mobile"];
+const period = "2024.11 ~ 2025.01 (개인, 8주)";
+const youtubeId = "yb0V3mu0FQU";
+
+// 핵심 기능 코드 (기존)
+const codeSkillSystem = String.raw`// 스킬 동작을 정의하는 공통 인터페이스
+public interface ISkillBehavior
+{
+    // 실제 스킬 실행 로직
+    void Execute(SkillData data, Transform casterTransform, int level);
+}
+
+// 스킬 타입에 맞는 행동 객체를 반환하는 팩토리
+public static class SkillBehaviorFactory
+{
+    public static ISkillBehavior GetSkillBehavior(SkillType type)
+    {
+        return type switch
+        {
+            SkillType.AOE  => new AOESkillBehavior(),   // 행위는 여기에 추가
+            SkillType.Aura => new AuraSkillBehavior(),
+            _ => throw new ArgumentException(
+                $"[SkillBehaviorFactory] Unknown skill type: {type}")
+        };
+    }
+}
+
+// 스킬을 발동시키는 주체
+public class SkillCaster : MonoBehaviour
+{
+    private SkillEquip skillEquip;
+    private SkillLevelManager skillLevelManager;
+    private Dictionary<int, float> cooldownTimers = new();
+
+    [SerializeField] private PlayerMana playerMana;
+
+    // 외부에서 장비/레벨 매니저 주입
+    public void Initialize(SkillEquip skillEquip, SkillLevelManager skillLevelManager)
+    {
+        this.skillEquip = skillEquip;
+        this.skillLevelManager = skillLevelManager;
+    }
+
+    // 스킬 사용 가능 여부 체크
+    public bool CanCast(SkillData skillData)
+    {
+        return (!cooldownTimers.TryGetValue(skillData.ID, out float remaining) || remaining <= 0f)
+            && playerMana != null
+            && playerMana.HasEnoughMana(skillData.ManaCost);
+    }
+
+    // 실제 스킬 발동
+    public void CastSkill(SkillData skillData, System.Action<float> onCooldownTriggered = null)
+    {
+        if (skillData == null || skillEquip == null || playerMana == null) return;
+
+        int level = skillLevelManager.GetLevel(skillData.ID);
+
+        // 쿨타임
+        if (cooldownTimers.TryGetValue(skillData.ID, out float remainingTime) && remainingTime > 0f)
+        {
+            return;
+        }
+
+        // 마나
+        if (!playerMana.HasEnoughMana(skillData.ManaCost))
+        {
+            return;
+        }
+
+        // 마나 소모
+        playerMana.ConsumeMana(skillData.ManaCost);
+
+        // 팩토리로 올바른 Behavior 생성 후 스킬 발동
+        var behavior = SkillBehaviorFactory.GetSkillBehavior(skillData.Type);
+        behavior.Execute(skillData, transform, level);
+
+        cooldownTimers[skillData.ID] = skillData.Cooldown;
+        StartCoroutine(CooldownRoutine(skillData.ID));
+
+        // UI 업데이트 트리거 (쿨타임 정보 전달)
+        onCooldownTriggered?.Invoke(skillData.Cooldown);
+    }
+
+    // 쿨타임 시간 감소
+    private IEnumerator CooldownRoutine(int skillId)
+    {
+        while (cooldownTimers[skillId] > 0f)
+        {
+            cooldownTimers[skillId] -= Time.deltaTime;
+            yield return null;
+        }
+
+        cooldownTimers[skillId] = 0f;
+    }
+}`;
+
+// ▼ ‘시행착오’ 섹션에 넣을 코드 (네가 준 새 코드)
+const codeTrials = String.raw`// 팩토리 메서드
+public static class SkillBehaviorFactory
+{
+    public static ISkillBehavior GetSkillBehavior(SkillType type)
+    {
+        return type switch // 외부에서 스킬 타입을 추가한다면 등록기반으로 리팩토링해야함.
+        {
+            SkillType.AOE => new AOESkillBehavior(),
+            SkillType.Aura => new AuraSkillBehavior(),
+            _ => throw new ArgumentException($"[SkillBehaviorFactory] Unknown skill type: {type}")
+        };
+    }
+}
+
+//스킬 타입 정의
+public class AOESkillBehavior : ISkillBehavior
+{
+    public void Execute(SkillData data, Transform casterTransform, int level)
+    {
+        int damage = data.GetPowerWithLevel(level);
+
+        foreach (var enemy in AliveEnemyManager.Enemies)
+        {
+            float dist = Vector2.Distance(enemy.transform.position, casterTransform.position);
+            if (dist <= data.Range && enemy.TryGetComponent(out IDamageable damageable))
+            {
+                damageable.TakeDamage(damage);
+            }
+        }
+
+        var prefab = Resources.Load<GameObject>(data.PrefabName);
+        if (prefab != null)
+        {
+            Object.Instantiate(prefab, casterTransform.position, Quaternion.identity);
+        }
+    }
+}
+
+public interface ISkillBehavior
+{
+    void Execute(SkillData data, Transform casterTransform, int level);
+}
+
+// 스킬 데이터 로드
+public class SkillLoader : MonoBehaviour
+{
+    public static SkillLoader Instance { get; private set; }
+
+    private Dictionary<int, SkillData> skillDict;
+
+    private void Awake()
+    {
+        Instance = this;
+        var skills = CSVLoader.LoadTable<SkillData>("SkillData");
+        skillDict = new();
+        foreach (var skill in skills)
+            skillDict[skill.ID] = skill;
+    }
+
+    public SkillData GetSkillData(int id) =>
+        skillDict.TryGetValue(id, out var data) ? data : null;
+
+    public List<SkillData> GetAllSkillData()
+    {
+        return skillDict.Values.ToList();
+    }
+}`;
+---
+
+<BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
+
+<main class="container">
+  <!-- 대표 이미지 -->
+  <section class="section">
+    <img src={hero} alt={title} class="detail-hero" />
+  </section>
+
+  <!-- 개요 -->
+  <section class="section">
+    <h3>개요</h3>
+    <p>
+      “달토끼 키우기” 스타일의 방치형/성장형 모바일 게임 프로토타입입니다.
+      데이터 테이블 기반(스킬/장비/강화) 설계와 <b>팩토리 + 전략(Strategy)</b> 패턴을 활용해
+      스킬 동작을 런타임에 유연하게 결정하도록 구성했습니다.
+    </p>
+  </section>
+
+  <!-- 개발 기간 -->
+  <section class="section">
+    <h3>개발 기간</h3>
+    <p class="muted">{period}</p>
+  </section>
+
+  <!-- 플레이 데모 -->
+<section class="section">
+  <h3>플레이 데모</h3>
+  <div class="demo-vertical">
+    <figure>
+      <img src={gif1} alt="전투/파밍 루프" loading="lazy" />
+      <figcaption>전투/파밍 루프</figcaption>
+    </figure>
+    <figure>
+      <img src={gif2} alt="스킬/버프 조합" loading="lazy" />
+      <figcaption>스킬/버프 조합</figcaption>
+    </figure>
+    <figure>
+      <img src={gif3} alt="보스/스테이지 진행" loading="lazy" />
+      <figcaption>보스/스테이지 진행</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 코드 위 이미지 (사이즈 축소) -->
+<section class="section">
+  <figure style="text-align:center;">
+    <img src={codeTopImage} alt="스킬 시스템 개요" 
+         style="width:60%;max-width:540px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);" />
+    <figcaption class="muted" style="margin-top:8px;">스킬 시스템(Factory + Strategy) 개요</figcaption>
+  </figure>
+</section>
+
+  <!-- 핵심 코드 -->
+  <section class="section">
+    <h3>핵심 코드</h3>
+    <p class="muted">런타임에 스킬 타입에 맞는 동작을 선택하여 실행하는 구조입니다.</p>
+
+    <details class="code-block" open>
+      <summary>SkillBehaviorFactory · SkillCaster</summary>
+      <pre><code class="language-csharp">{codeSkillSystem}</code></pre>
+    </details>
+  </section>
+
+  <!-- YouTube -->
+  <section class="section">
+    <h3>플레이 영상</h3>
+    <div class="yt-wrap">
+      <iframe
+        src={`https://www.youtube.com/embed/${youtubeId}`}
+        title="Rising Hero Demo Video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+        loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- ▼ 하단: 시행착오 섹션 -->
+  <section class="section">
+    <h3>시행착오</h3>
+
+    <!-- 1단계: SO로 무기 데이터 관리 -->
+    <div class="trial-grid">
+      <figure>
+        <img src={imgAttemptSO} alt="무기 SO 인스펙터" />
+      </figure>
+      <div>
+        <img src={imgAttemptRow} alt="" style="max-width:100%;border-radius:10px;margin-bottom:10px;" />
+        <div class="callout">
+          <p><b>Unity Editor 내에서만 데이터 관리</b>가 유지보수에 어렵다고 판단.</p>
+          <p>초기에는 Asset(SO) 기반으로 무기 시스템을 구성했지만, 무기/효과 유형이 많아질수록 관리가 복잡해졌음.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2단계: CSV → 테이블 기반 -->
+    <figure style="margin-top:20px;">
+      <img src={imgCSVShot} alt="SkillData.csv" style="width:100%;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);" />
+      <figcaption class="muted" style="margin-top:8px;">
+        Excel에서 추출한 CSV로 스킬 데이터를 일원화. 사용 시 미리 파싱된 테이블에서 조회.
+      </figcaption>
+    </figure>
+
+  <figure style="margin-top:20px;text-align:center;">
+    <img src={imgDiagram} alt="스킬 시스템 다이어그램" 
+        style="width:100%;max-width:1600px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);" />
+  </figure>
+
+    <!-- 코드 블록: 시행착오에서 확정한 구조 -->
+    <details class="code-block" open style="margin-top:16px;">
+      <summary>최종 구조 발췌: Factory · Behavior · Loader</summary>
+      <pre><code class="language-csharp">{codeTrials}</code></pre>
+    </details>
+  </section>
+</main>
+
+<style>
+  /* ========= 베이스 ========= */
+  :root{
+    --fg:#0f172a;           /* 본문 */
+    --muted:#6b7280;        /* 보조 텍스트 */
+    --line:#eceff3;         /* 경계선 */
+    --card:#ffffff;         /* 카드/블록 배경 */
+    --shadow:0 10px 30px rgba(2,6,23,.07);
+    --radius:14px;
+    --radius-lg:16px;
+    --accent:#ffd400;       /* 브랜드 노랑(히어로/포인트) */
+    --accent-soft:#fff9cc;
+    --code-bg:#0b1220;      /* 코드블록 */
+    --code-fg:#e6edf3;
+    --maxw:1100px;
+  }
+
+  .container{max-width:var(--maxw);margin:0 auto;padding:0 22px;color:var(--fg)}
+  .section{padding:70px 0}
+  h3{
+    font-size:22px;margin:0 0 20px;letter-spacing:.1px;
+    position:relative;display:inline-block;padding-right:8px
+  }
+  h3::after{
+    content:""; position:absolute; left:0; bottom:-8px; height:3px; width:32px;
+    background:linear-gradient(90deg,var(--accent),transparent 70%);
+    border-radius:4px;
+  }
+  .muted{color:var(--muted)}
+
+  /* ========= 대표 이미지 ========= */
+  .detail-hero{
+    width:100%; max-height:420px; object-fit:cover;
+    border-radius:var(--radius-lg); box-shadow:var(--shadow)
+  }
+
+  /* ========= 플레이 데모 (세로 · 1.5배, 중앙) ========= */
+  .demo-vertical{
+    display:flex; flex-direction:column; align-items:center; gap:64px;
+  }
+  .demo-vertical figure{ margin:0; text-align:center; width:100%; }
+  .demo-vertical img{
+    width:120%;               /* 1.5배 느낌 (120% + max-width로 제어) */
+    max-width:960px;          /* 상한 */
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    display:block; margin:0 auto;
+  }
+  .demo-vertical figcaption{
+    margin-top:10px; color:var(--muted); font-size:14px;
+  }
+
+  /* ========= 유튜브 임베드 ========= */
+  .yt-wrap{
+    position:relative; width:100%; aspect-ratio:16/9;
+    border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow);
+    background:#000;
+  }
+  .yt-wrap > iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+
+  /* ========= 시행착오 레이아웃 ========= */
+  .trial-grid{
+    display:grid; gap:24px; align-items:start; grid-template-columns:1fr;
+  }
+  @media (min-width: 960px){
+    .trial-grid{ grid-template-columns: 1fr 1.1fr; }
+  }
+  .trial-grid img{
+    width:100%; border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .callout{
+    margin-top:12px; padding:14px 16px; line-height:1.7;
+    background:var(--accent-soft); border:1px solid #ffeaa7; border-left:4px solid var(--accent);
+    border-radius:12px; color:#3b3f4a;
+  }
+
+  /* ========= 다이어그램 (2배 확대 느낌) ========= */
+  /* 이미 페이지에 inline style(max-width:1600px)이 있으니 보조만 */
+  .diagram-wide{
+    width:100%; max-width:1600px; border-radius:var(--radius-lg); box-shadow:var(--shadow);
+  }
+
+  /* ========= 코드 블록(Details) ========= */
+  details.code-block{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  details.code-block + details.code-block{ margin-top:16px; }
+  details.code-block > summary{
+    cursor:pointer; padding:14px 16px; font-weight:700; list-style:none;
+    position:relative; background:#fafafa; border-bottom:1px solid var(--line);
+  }
+  details.code-block > summary::-webkit-details-marker{ display:none; }
+  details.code-block > summary::after{
+    content:"▾"; position:absolute; right:14px; top:12px; font-size:16px; color:#9aa3af;
+    transition:transform .15s ease;
+  }
+  details[open].code-block > summary::after{ transform:rotate(180deg); }
+
+  details.code-block pre{
+    margin:0; max-width:100%; overflow:auto;
+    background:var(--code-bg); color:var(--code-fg);
+    padding:18px 18px; font-size:14px; line-height:1.65;
+  }
+  details.code-block code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* ========= Figure 공통 ========= */
+  figure{ margin:0; }
+  figure.center{ text-align:center; }
+  figcaption{ color:var(--muted); font-size:13.5px; }
+
+  /* ========= 마진/간격 보정 ========= */
+  .section p{ line-height:1.85; }
+  .section .muted{ margin:0; }
+</style>

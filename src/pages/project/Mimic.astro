@@ -1,8 +1,8 @@
---- 
+---
 import BaseLayout from "../../layouts/BaseLayout.astro"; 
 
 // 섹션에 쓸 미디어 (public 루트 기준 경로)
-const hero = "/mimic_thumbnail.png";   // ← public에서 직접
+const hero = "/Image/mimic_thumbnail.png";   // ← public/Image/
 const gif1 = "/Image/Mimic_Time.gif";
 const gif2 = "/Image/Mimic_BossCombat.gif";
 const img1 = "/Image/MimicImage1.png";
@@ -158,11 +158,9 @@ public class AliveEnemyManager : MonoBehaviour
 
 <main class="container">
   <section class="section">
-    <!-- 상단 대표 이미지: public에서 직접 -->
     <img src={hero} alt={title} class="detail-hero" />
   </section>
 
-  <!-- 개요 -->
   <section class="section">
     <h3>개요</h3>
     <p>
@@ -171,13 +169,11 @@ public class AliveEnemyManager : MonoBehaviour
     </p>
   </section>
 
-  <!-- 개발 기간 -->
   <section class="section">
     <h3>개발 기간</h3>
     <p class="muted">{period}</p>
   </section>
 
-  <!-- GIF 2개 -->
   <section class="section">
     <h3>플레이 데모</h3>
     <div class="media-grid">
@@ -192,7 +188,6 @@ public class AliveEnemyManager : MonoBehaviour
     </div>
   </section>
 
-  <!-- 이미지 2개 -->
   <section class="section">
     <h3>시스템 스냅샷</h3>
     <div class="media-grid">
@@ -207,7 +202,6 @@ public class AliveEnemyManager : MonoBehaviour
     </div>
   </section>
 
-  <!-- 핵심 코드 -->
   <section class="section">
     <h3>핵심 코드</h3>
     <p class="muted">빌드 조합(능력 시너지)과 적 스폰을 담당하는 핵심 스니펫입니다.</p>
@@ -216,16 +210,11 @@ public class AliveEnemyManager : MonoBehaviour
       <summary>ArrowLauncher.cs – 액티브 능력(화살) 발사</summary>
       <pre><code class="language-csharp">{codeArrow}</code></pre>
     </details>
-
-    <!-- 요청: SpawnDirector 섹션 제거 완료 -->
-
   </section>
 
-  <!-- 시행착오 -->
   <section class="section">
     <h3>시행착오 &amp; 개선</h3>
 
-    <!-- 요청: 이미지들 제거 후 코드로 교체 -->
     <details class="code-block" open>
       <summary>Enemy / AliveEnemyManager – 살아있는 적 관리</summary>
       <pre><code class="language-csharp">{codeEnemyManager}</code></pre>
@@ -238,12 +227,11 @@ public class AliveEnemyManager : MonoBehaviour
     </ul>
   </section>
 
-  <!-- 링크 -->
   <section class="section">
     <h3>링크</h3>
     <ul>
       <li>
-        <a href="https://drive.google.com/drive/folders/1FJtWonGf2Tnsdsva6j0_6VJqMQKPBU7N?usp=sharing" target="_blank" rel="noopener">
+        <a href="https://drive.google.com/drive/folders/1FJtWonGf2Tnsdsva6j0_6VJqMQKPBU7N?usp=sharing" target="_blank" rel="noopener noreferrer">
           프로토타입 v0.4.0 (Google Drive)
         </a>
       </li>
@@ -253,7 +241,6 @@ public class AliveEnemyManager : MonoBehaviour
 </main>
 
 <style>
-  /* ===== Tokens ===== */
   :root{
     --fg:#0f172a;
     --muted:#6b7280;
@@ -263,69 +250,24 @@ public class AliveEnemyManager : MonoBehaviour
     --radius:14px;
     --radius-lg:16px;
   }
-
-  /* 공통 컨테이너/섹션은 기존 클래스 사용 */
   .section{ padding:70px 0; }
-  h3{
-    font-size:22px; margin:0 0 20px; letter-spacing:.1px;
-    position:relative; display:inline-block; padding-right:8px;
-  }
-  h3::after{
-    content:""; position:absolute; left:0; bottom:-8px; height:3px; width:32px;
-    background:linear-gradient(90deg,#ffd400,transparent 70%);
-    border-radius:4px;
-  }
+  h3{ font-size:22px; margin:0 0 20px; letter-spacing:.1px; position:relative; display:inline-block; padding-right:8px; }
+  h3::after{ content:""; position:absolute; left:0; bottom:-8px; height:3px; width:32px; background:linear-gradient(90deg,#ffd400,transparent 70%); border-radius:4px; }
   .muted{ color:var(--muted); }
-
-  /* 대표 이미지 */
-  .detail-hero{
-    width:100%; max-height:420px; object-fit:cover;
-    border-radius:var(--radius-lg); box-shadow:var(--shadow);
-  }
-
-  /* 플레이 데모/시스템 스냅샷: 동일한 그리드 미학 적용 */
-  .media-grid{
-    display:grid; gap:24px;
-    grid-template-columns:1fr;           /* 모바일 1열 */
-    align-items:start;
-  }
-  @media (min-width: 900px){
-    .media-grid{ grid-template-columns: repeat(2, 1fr); }  /* 데스크톱 2열 */
-  }
+  .detail-hero{ width:100%; max-height:420px; object-fit:cover; border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+  .media-grid{ display:grid; gap:24px; grid-template-columns:1fr; align-items:start; }
+  @media (min-width: 900px){ .media-grid{ grid-template-columns: repeat(2, 1fr); } }
   .media-grid figure{ margin:0; text-align:center; }
-  .media-grid img{
-    width:100%; border-radius:var(--radius); box-shadow:var(--shadow);
-    display:block;
-  }
-  .media-grid figcaption{
-    margin-top:10px; color:var(--muted); font-size:14px;
-  }
-
-  /* 코드 블록 (details) */
-  details.code-block{
-    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg);
-    box-shadow:var(--shadow); overflow:hidden;
-  }
+  .media-grid img{ width:100%; border-radius:var(--radius); box-shadow:var(--shadow); display:block; }
+  .media-grid figcaption{ margin-top:10px; color:var(--muted); font-size:14px; }
+  details.code-block{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden; }
   details.code-block + details.code-block{ margin-top:16px; }
-  details.code-block > summary{
-    cursor:pointer; padding:14px 16px; font-weight:700; list-style:none;
-    position:relative; background:#fafafa; border-bottom:1px solid var(--line);
-  }
+  details.code-block > summary{ cursor:pointer; padding:14px 16px; font-weight:700; list-style:none; position:relative; background:#fafafa; border-bottom:1px solid var(--line); }
   details.code-block > summary::-webkit-details-marker{ display:none; }
-  details.code-block > summary::after{
-    content:"▾"; position:absolute; right:14px; top:12px; font-size:16px; color:#9aa3af;
-    transition:transform .15s ease;
-  }
+  details.code-block > summary::after{ content:"▾"; position:absolute; right:14px; top:12px; font-size:16px; color:#9aa3af; transition:transform .15s ease; }
   details[open].code-block > summary::after{ transform:rotate(180deg); }
-
-  details.code-block pre{
-    margin:0; max-width:100%; overflow:auto;
-    background:#0b1220; color:#e6edf3;
-    padding:18px 18px; font-size:14px; line-height:1.65;
-  }
+  details.code-block pre{ margin:0; max-width:100%; overflow:auto; background:#0b1220; color:#e6edf3; padding:18px 18px; font-size:14px; line-height:1.65; }
   details.code-block code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-  /* 본문 가독성 */
   .section p{ line-height:1.85; }
   ul{ line-height:1.8; }
 </style>

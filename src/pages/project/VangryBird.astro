@@ -1,17 +1,16 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
-// 미디어 경로
 const hero       = "/Image/vangry_thumbnail.png";   // 대표 이미지
 const shot1      = "/Image/VB_Screen1.png";
 const shot2      = "/Image/VB_Screen2.png";
 const shot3      = "/Image/VB_Screen3.png";
-const codeTopImg = "/Image/VB_CodeDiagram.png";     // 코드 위 다이어그램/이미지
+const codeTopImg = "/Image/VB_CodeDiagram.png";
 
 const title  = "Vangry Bird";
 const tags   = ["Unity", "VR", "Multiplayer"];
 const period = "2025.06 ~ 2025.09 (팀, 12주)";
-const youtubeId = "PY6oGjiwtvI";  // 유튜브 ID (t=1s 파라미터는 생략)
+const youtubeId = "PY6oGjiwtvI";
 
 const codeBird = String.raw`using UnityEngine;
 
@@ -92,6 +91,7 @@ public class Bird : MonoBehaviour
     void OnEnable()  => AliveCount++;
     void OnDisable() => AliveCount = Mathf.Max(0, AliveCount - 1);
 }`;
+
 const codeBootstrap = String.raw`using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -243,12 +243,10 @@ namespace Game.Shared.Network
 <BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
 
 <main class="container">
-  <!-- 대표 이미지 -->
   <section class="section">
     <img src={hero} alt={title} class="detail-hero" />
   </section>
 
-  <!-- 개요 -->
   <section class="section">
     <h3>개요</h3>
     <p>
@@ -258,13 +256,11 @@ namespace Game.Shared.Network
     </p>
   </section>
 
-  <!-- 개발 기간 -->
   <section class="section">
     <h3>개발 기간</h3>
     <p class="muted">{period}</p>
   </section>
 
-  <!-- 스크린샷 3개 -->
   <section class="section">
     <h3>스크린샷</h3>
     <div class="media-grid">
@@ -283,7 +279,6 @@ namespace Game.Shared.Network
     </div>
   </section>
 
-  <!-- 코드 위 이미지 -->
   <section class="section">
     <figure style="text-align:center;">
       <img src={codeTopImg} alt="구조 다이어그램"
@@ -292,7 +287,6 @@ namespace Game.Shared.Network
     </figure>
   </section>
 
-  <!-- 코드 -->
   <section class="section">
     <h3>핵심 코드</h3>
     <p class="muted">발사체 Bird 동작과 네트워크 부트스트랩 초기화입니다.</p>
@@ -308,7 +302,6 @@ namespace Game.Shared.Network
     </details>
   </section>
 
-  <!-- YouTube -->
   <section class="section">
     <h3>플레이 영상</h3>
     <div class="yt-wrap">
@@ -323,98 +316,38 @@ namespace Game.Shared.Network
 </main>
 
 <style>
-  /* ===== Tokens ===== */
   :root{
-    --fg:#0f172a;
-    --muted:#6b7280;
-    --line:#eceff3;
-    --card:#ffffff;
-    --shadow:0 10px 30px rgba(2,6,23,.07);
-    --radius:14px;
-    --radius-lg:16px;
+    --fg:#0f172a; --muted:#6b7280; --line:#eceff3; --card:#ffffff;
+    --shadow:0 10px 30px rgba(2,6,23,.07); --radius:14px; --radius-lg:16px;
   }
 
   .section{ padding:72px 0; }
-  h3{
-    font-size:22px; margin:0 0 20px; letter-spacing:.1px;
-    position:relative; display:inline-block; padding-right:8px;
-  }
-  h3::after{
-    content:""; position:absolute; left:0; bottom:-8px; height:3px; width:32px;
-    background:linear-gradient(90deg,#ffd400,transparent 70%);
-    border-radius:4px;
-  }
+  h3{ font-size:22px; margin:0 0 20px; letter-spacing:.1px; position:relative; display:inline-block; padding-right:8px; }
+  h3::after{ content:""; position:absolute; left:0; bottom:-8px; height:3px; width:32px;
+    background:linear-gradient(90deg,#ffd400,transparent 70%); border-radius:4px; }
   .muted{ color:var(--muted); }
   .section p{ line-height:1.85; }
 
-  /* ===== 대표 이미지 (상단) ===== */
-  .detail-hero{
-    width:100%; max-height:420px; object-fit:cover;
-    border-radius:var(--radius-lg); box-shadow:var(--shadow);
-  }
+  .detail-hero{ width:100%; max-height:420px; object-fit:cover; border-radius:var(--radius-lg); box-shadow:var(--shadow); }
 
-  /* ===== 스크린샷 3개: 규격 통일 =====
-     - 동일한 비율(16:9)로 크롭
-     - 데스크톱 3열, 모바일 1열 */
-  .media-grid{
-    display:grid; gap:24px;
-    grid-template-columns:1fr; align-items:start;
-  }
-  @media (min-width: 980px){
-    .media-grid{ grid-template-columns: repeat(3, 1fr); }
-  }
+  .media-grid{ display:grid; gap:24px; grid-template-columns:1fr; align-items:start; }
+  @media (min-width: 980px){ .media-grid{ grid-template-columns: repeat(3, 1fr); } }
   .media-grid figure{ margin:0; }
   .media-grid img{
-    width:100%;
-    aspect-ratio: 16 / 9;   /* 규격 통일 */
-    object-fit: cover;      /* 넘치는 영역은 자연스럽게 크롭 */
-    border-radius:var(--radius); box-shadow:var(--shadow);
-    display:block;
+    width:100%; aspect-ratio: 16 / 9; object-fit: cover;
+    border-radius:var(--radius); box-shadow:var(--shadow); display:block;
   }
-  .media-grid figcaption{
-    margin-top:10px; color:var(--muted); font-size:14px; text-align:center;
-  }
+  .media-grid figcaption{ margin-top:10px; color:var(--muted); font-size:14px; text-align:center; }
 
-  /* ===== 코드 위 이미지(다이어그램) =====
-     - 섹션 내 중앙 정렬 + 반응형 폭 제어 */
-  .code-top-figure{ text-align:center; }
-  .code-top-figure img{
-    width:68%; max-width:760px;   /* 살짝 줄여 보기 좋게 */
-    border-radius:12px; box-shadow:var(--shadow);
-  }
-  .code-top-figure figcaption{ margin-top:8px; color:var(--muted); }
-
-  /* ===== 코드 블록 (details) ===== */
-  details.code-block{
-    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg);
-    box-shadow:var(--shadow); overflow:hidden;
-  }
+  details.code-block{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden; }
   details.code-block + details.code-block{ margin-top:16px; }
-  details.code-block > summary{
-    cursor:pointer; padding:14px 16px; font-weight:700; list-style:none;
-    position:relative; background:#fafafa; border-bottom:1px solid var(--line);
-  }
+  details.code-block > summary{ cursor:pointer; padding:14px 16px; font-weight:700; list-style:none; position:relative; background:#fafafa; border-bottom:1px solid var(--line); }
   details.code-block > summary::-webkit-details-marker{ display:none; }
-  details.code-block > summary::after{
-    content:"▾"; position:absolute; right:14px; top:12px; font-size:16px; color:#9aa3af;
-    transition:transform .15s ease;
-  }
+  details.code-block > summary::after{ content:"▾"; position:absolute; right:14px; top:12px; font-size:16px; color:#9aa3af; transition:transform .15s ease; }
   details[open].code-block > summary::after{ transform:rotate(180deg); }
+  details.code-block pre{ margin:0; max-width:100%; overflow:auto; background:#0b1220; color:#e6edf3; padding:18px 18px; font-size:14px; line-height:1.65; }
+  details.code-block code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
-  details.code-block pre{
-    margin:0; max-width:100%; overflow:auto;
-    background:#0b1220; color:#e6edf3;
-    padding:18px 18px; font-size:14px; line-height:1.65;
-  }
-  details.code-block code{
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-
-  /* ===== YouTube 임베드 ===== */
-  .yt-wrap{
-    position: relative; width: 100%; aspect-ratio: 16 / 9;
-    border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.06);
-    background:#000;
-  }
+  .yt-wrap{ position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.06); background:#000; }
   .yt-wrap > iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
 </style>

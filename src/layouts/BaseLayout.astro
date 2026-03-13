@@ -1,27 +1,24 @@
 ---
-import Header from "../components/Header.astro";
 import Hero from "../components/Hero.astro";
+// 글로벌 CSS는 프론트매터에서 import하면 자동 번들됨
+import "../styles/global.css";
 
 const {
   title = "권혁준 · Portfolio & Notes",
   heroTitle = "권혁준 · Portfolio & Notes",
-  heroSub = "",
+  heroSub = "Unity · VR · Multiplayer · Backend",
   showHero = true,
 } = Astro.props;
 ---
+
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>{title}</title>
-	<style is:global>
-  	@import "../styles/global.css";  /* 상대 경로로 불러오기 */
-	</style>
-
   </head>
   <body>
     {showHero && <Hero title={heroTitle} sub={heroSub} />}
-    <Header />
     <slot />
   </body>
 </html>

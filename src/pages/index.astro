@@ -1,21 +1,46 @@
 ---
+// 단 하나의 프론트매터 블록만!
 import BaseLayout from "../layouts/BaseLayout.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+
+const projects = [
+  {
+    title: "Mimic",
+    href: "/project/Mimic",
+    tags: ["Unity", "2D", "PC"],
+    thumb: "/Image/mimic_thumbnail.png",
+    summary: "Unity로 만든 뱀서라이크",
+  },
+  {
+    title: "Rising Hero",
+    href: "/project/RisingHero",
+    tags: ["Unity", "2D", "Mobile"],
+    thumb: "/Image/risinghero_thumbnail.png",
+    summary: "달토끼 키우기 클론코딩",
+  },
+  {
+    title: "Vangry Bird",
+    href: "/project/VangryBird",
+    tags: ["Unity", "VR", "Multiplayer"],
+    thumb: "/Image/vangry_thumbnail.png",
+    summary: "VR Angry Birds 스타일 멀티플레이 프로토타입",
+  },
+];
 ---
 
 <BaseLayout
   title="권혁준 · Portfolio & Notes"
   heroTitle="권혁준 · Portfolio & Notes"
+  heroSub="Unity · VR · Multiplayer · Backend"
 />
 
 <main class="container">
-  <section class="section intro-grid">
-    <!-- 왼쪽: 내 사진 -->
-  <figure class="profile">
-    <img src="/profile.jpg" alt="권혁준 프로필 사진" class="profile-img" />
-  </figure>
+  <!-- Introduction -->
+  <section id="intro" class="section intro-grid">
+    <figure class="profile">
+      <img src="/profile.jpg" alt="권혁준 프로필 사진" class="profile-img" />
+    </figure>
 
-
-    <!-- 오른쪽: 자기소개 -->
     <div class="intro-text">
       <h2>Introduction</h2>
       <p>
@@ -23,16 +48,32 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         새로운 아이디어와 시도를 통해 성장해 나가고자 합니다.
       </p>
 
-      <!-- 강조용 callout -->
       <div class="callout">
-        <strong>현재</strong> : 의료 관련 VR 개발중
+        <strong>현재</strong> : 의료 관련 VR 개발중<br />
         <strong>관심</strong> : 클라이언트 개발
       </div>
 
-      <!-- 필요하면 링크/버튼 자리 -->
       <p class="intro-links">
-        <a href="/project/">프로젝트 보기 →</a>
+        <a href="#project">프로젝트로 이동 →</a>
       </p>
     </div>
+  </section>
+
+  <!-- Project -->
+  <section id="project" class="section">
+    <h2>Project</h2>
+    <div class="grid-cards">
+      {projects.map((p) => <ProjectCard {...p} />)}
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="section">
+    <h2>Contact</h2>
+    <p>
+      <a href="mailto:이메일@도메인">이메일</a> ·
+      <a href="https://github.com/gdkhj" target="_blank" rel="noopener noreferrer">GitHub</a> ·
+      <a href="https://gdkhj.github.io" target="_blank" rel="noopener noreferrer">포트폴리오 메인</a>
+    </p>
   </section>
 </main>

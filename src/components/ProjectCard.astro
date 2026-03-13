@@ -1,20 +1,31 @@
 ---
 const {
   title,
-  href,
+  href,               // ← optional
   tags = [],
-  thumb = "",      // public/ 기준 절대경로 e.g. "/images/p1.jpg"
+  thumb = "",
   summary = "",
 } = Astro.props;
 ---
 <article class="card">
-  <a class="thumb-wrap" href={href} aria-label={title}>
-    {thumb
-      ? <img class="thumb" src={thumb} alt={title} loading="lazy" />
-      : <div class="thumb placeholder"><div class="bar" /></div>}
-  </a>
+  {href ? (
+    <a class="thumb-wrap" href={href} aria-label={title}>
+      {thumb
+        ? <img class="thumb" src={thumb} alt={title} loading="lazy" />
+        : <div class="thumb placeholder"><div class="bar" /></div>}
+    </a>
+  ) : (
+    <div class="thumb-wrap">
+      {thumb
+        ? <img class="thumb" src={thumb} alt={title} loading="lazy" />
+        : <div class="thumb placeholder"><div class="bar" /></div>}
+    </div>
+  )}
+
   <div class="card-body">
-    <h3 class="card-title"><a href={href}>{title}</a></h3>
+    <h3 class="card-title">
+      {href ? <a href={href}>{title}</a> : title}
+    </h3>
     {summary && <p class="card-summary">{summary}</p>}
     {tags.length > 0 && (
       <div class="tags">

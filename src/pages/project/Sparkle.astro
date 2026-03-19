@@ -1,0 +1,147 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const hero  = "/Image/Sparkle_thumbnail.png";
+const img  = "/Image/Sparkle_Gameplay.png";
+
+const title  = "Sparkle";
+const tags   = ["React", "ChatGPT API", "Web"];
+const period = "2주 (개인)";
+
+const codeChat = String.raw`const handleStartGame = async () => {
+    const initialSystemMessage = {
+        role: 'system',
+        content: '장르는 [genre]이고, 캐릭터 이름은 [characterName]인 소설을 써줘. 내가 선택할 수 있는 선택지는 항상 4개로 해줘. 너가 소설을 쓰고 4개의 선택지를 주면 내가 1,2,3,4 중 하나의 대답을 할게. 분기수는 [branchingCount]개로 하고싶어.'
+    };
+
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        model: "gpt-4o",
+        messages: [initialSystemMessage],
+        max_tokens: 2000,
+        temperature: 0.5,
+    }, { headers: { 'Authorization': 'Bearer [apiKey]' } });
+
+    setMessages([{ role: 'assistant', content: response.data.choices[0].message.content }]);
+    setGameStarted(true);
+};
+
+const handleChoice = async (choice) => {
+    const userMessage = { role: 'user', content: '사용자: ' + choice };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+
+    const requestMessages = [systemMessage, ...updatedMessages];
+
+    if (!branchingCompleted && updatedMessages.length > parseInt(branchingCount) + 1) {
+        requestMessages.push({ role: 'system', content: '이제 추가로 이야기를 생성하지 말고, 마무리 해줘.' });
+        setBranchingCompleted(true);
+    }
+
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        model: "gpt-4o",
+        messages: requestMessages,
+        max_tokens: 2000,
+        temperature: 0.5,
+    }, { headers: { 'Authorization': 'Bearer [apiKey]' } });
+
+    setMessages(prev => [...prev, { role: 'assistant', content: response.data.choices[0].message.content }]);
+};`;
+---
+
+<BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
+
+<main class="container">
+
+  <section class="section">
+    <img src={hero} alt={title} class="detail-hero" />
+  </section>
+
+  <section class="section">
+    <h3>개요</h3>
+    <p>페이지를 만들 기회가 생겨 ChatGPT와 연계해서 만든 텍스트 게임이다.</p>
+  </section>
+
+  <section class="section">
+    <h3>개발 기간</h3>
+    <p class="muted">{period}</p>
+  </section>
+
+  <section class="section">
+    <h3>주요 기능</h3>
+    <ul>
+      <li>로그인</li>
+      <li>진행 내역 Database에 저장</li>
+      <li>장르, 이름, 분기점의 개수 조절</li>
+      <li>진행 내역을 Text 파일로 추출</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h3>플레이 스크린샷</h3>
+    <div class="media-vertical">
+      <figure>
+        <img src={img} alt="게임플레이 스크린샷 1" />
+      </figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <h3>담당 파트</h3>
+    <ul>
+      <li>ChatGPT API 연결</li>
+      <li>Prompt 입력 및 분기점 설정</li>
+      <li>토큰 관리</li>
+      <li>Text 출력</li>
+      <li>React로 홈페이지 구현</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h3>핵심 코드</h3>
+    <p class="muted">게임 시작 및 선택지 처리 로직입니다. 매 요청마다 전체 대화 히스토리를 GPT에 전달해 문맥을 유지합니다.</p>
+    <details class="code-block" open>
+      <summary>Chat.js – handleStartGame · handleChoice</summary>
+      <pre><code class="language-javascript">{codeChat}</code></pre>
+    </details>
+  </section>
+
+  <section class="section">
+    <h3>프로젝트 회고</h3>
+    <p>
+      Page를 만들 기회가 생겨 다른 것보다 페이지로 작동하는 게임을 만들었습니다.
+      짧은 시간에 완성도 있는 페이지를 만들어 만족스러웠습니다.
+      시간이 더 있었다면 선택지를 UI로 만들고, 사용자에게 Token을 사용하게 하는 BM을 구현해봤을 것 같습니다.
+    </p>
+  </section>
+
+</main>
+
+<style>
+  :root {
+    --fg: #0f172a; --muted: #6b7280; --line: #eceff3; --card: #ffffff;
+    --shadow: 0 10px 30px rgba(2,6,23,.07); --radius: 14px; --radius-lg: 16px;
+  }
+  .section { padding: 70px 0; }
+  h3 { font-size: 22px; margin: 0 0 20px; position: relative; display: inline-block; padding-right: 8px; }
+  h3::after { content: ""; position: absolute; left: 0; bottom: -8px; height: 3px; width: 32px;
+    background: linear-gradient(90deg, #ffd400, transparent 70%); border-radius: 4px; }
+  .muted { color: var(--muted); }
+  .section p, .section ul { line-height: 1.85; }
+  ul { padding-left: 20px; }
+
+  .detail-hero { width: 100%; max-height: 420px; object-fit: cover;
+    border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+
+  .media-vertical { display: flex; flex-direction: column; gap: 32px; }
+  .media-vertical figure { margin: 0; }
+  .media-vertical figure img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); display: block; }
+
+  details.code-block { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+  details.code-block + details.code-block { margin-top: 16px; }
+  details.code-block > summary { cursor: pointer; padding: 14px 16px; font-weight: 700; list-style: none; position: relative; background: #fafafa; border-bottom: 1px solid var(--line); }
+  details.code-block > summary::-webkit-details-marker { display: none; }
+  details.code-block > summary::after { content: "▾"; position: absolute; right: 14px; top: 12px; font-size: 16px; color: #9aa3af; transition: transform .15s ease; }
+  details[open].code-block > summary::after { transform: rotate(180deg); }
+  details.code-block pre { margin: 0; max-width: 100%; overflow: auto; background: #0b1220; color: #e6edf3; padding: 18px; font-size: 14px; line-height: 1.65; }
+  details.code-block code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+</style>

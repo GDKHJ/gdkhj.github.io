@@ -1,6 +1,5 @@
 ---
 import Hero from "../components/Hero.astro";
-// 글로벌 CSS는 프론트매터에서 import하면 자동 번들됨
 import "../styles/global.css";
 
 const {
@@ -8,6 +7,7 @@ const {
   heroTitle = "권혁준 · Portfolio & Notes",
   heroSub = "Unity · VR · Multiplayer · Backend",
   showHero = true,
+  showNav = true,
 } = Astro.props;
 ---
 
@@ -19,6 +19,114 @@ const {
   </head>
   <body>
     {showHero && <Hero title={heroTitle} sub={heroSub} />}
+
+    {showNav && <a href="/" class="back-btn">← 홈으로</a>}
+    {showNav && (
+      <nav class="toc" id="toc">
+        <ul id="toc-list"></ul>
+      </nav>
+    )}
+
     <slot />
+
+    <script>
+      const tocList = document.getElementById('toc-list');
+      const headings = document.querySelectorAll('main h3');
+
+      if (headings.length > 0) {
+        headings.forEach((h, i) => {
+          const id = `section-${i}`;
+          h.id = id;
+
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = `#${id}`;
+          a.textContent = h.textContent;
+          li.appendChild(a);
+          tocList.appendChild(li);
+        });
+      } else {
+        const toc = document.getElementById('toc');
+        if (toc) toc.style.display = 'none';
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const id = entry.target.id;
+          const link = tocList.querySelector(`a[href="#${id}"]`);
+          if (link) {
+            if (entry.isIntersecting) {
+              tocList.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+              link.classList.add('active');
+            }
+          }
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+
+      headings.forEach(h => observer.observe(h));
+    </script>
   </body>
 </html>
+
+<style is:global>
+  .back-btn {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    z-index: 100;
+    background: #fff200;
+    color: #111;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+    text-decoration: none;
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .back-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,0,0,.16);
+  }
+  .toc {
+    position: fixed;
+    top: 50%;
+    right: 40px;
+    transform: translateY(-50%);
+    z-index: 100;
+    max-width: 180px;
+  }
+  .toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .toc a {
+    font-size: 13px;
+    color: #c0c7cf;
+    text-decoration: none;
+    display: block;
+    line-height: 1.4;
+    padding: 7px 0 7px 14px;
+    border-left: 2px solid #e5e7eb;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .toc a:hover {
+    color: #555;
+    border-left-color: #ccc;
+  }
+  .toc a.active {
+    color: #111;
+    font-weight: 700;
+    border-left-color: #ffd400;
+  }
+  @media (max-width: 1200px) {
+    .toc { display: none; }
+  }
+  @media (max-width: 860px) {
+    .back-btn { display: none; }
+  }
+</style>

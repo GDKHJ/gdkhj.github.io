@@ -1,0 +1,149 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const hero    = "/Image/Raid_thumbnail.png";
+const gifGame = "/Image/Raid_Gameplay.gif";
+const gifUI   = "/Image/Raid_UI.gif";
+const imgUI   = "/Image/Raid_UI.png";
+
+const title  = "Raid";
+const tags   = ["Unreal Engine", "3D", "PC"];
+const period = "13주 (팀)";
+const youtubeId = "QfIiTdMoR7c";
+---
+
+<BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
+
+<main class="container">
+
+  <section class="section">
+    <img src={hero} alt={title} class="detail-hero" />
+  </section>
+
+  <section class="section">
+    <h3>개요</h3>
+    <p>Unreal Engine 5로 간단한 MORPG를 만들었다.</p>
+  </section>
+
+  <section class="section">
+    <h3>개발 기간</h3>
+    <p class="muted">{period}</p>
+  </section>
+
+  <section class="section">
+    <h3>플레이 데모</h3>
+    <figure>
+      <img src={gifGame} alt="게임플레이 데모" class="demo-img" />
+      <figcaption class="muted">게임플레이</figcaption>
+    </figure>
+  </section>
+
+  <section class="section">
+    <h3>주요 기능</h3>
+    <ul>
+      <li>멀티플레이</li>
+      <li>쿼터뷰 플레이</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h3>담당 파트</h3>
+    <ul>
+      <li>기획</li>
+      <li>
+        몬스터 구현
+        <ul>
+          <li>인식 및 추적</li>
+          <li>범위 내 플레이어 공격</li>
+        </ul>
+      </li>
+      <li>맵 제작</li>
+    </ul>
+  </section>
+
+    <section class="section">
+    <h3>기획</h3>
+    <h4 class="sub-heading">UI 기획</h4>
+    <div class="figma-wrap">
+      <iframe
+        src="https://www.figma.com/embed?embed_host=share&url=https://www.figma.com/design/ZGoeu2qbJNyoC9768aa2yP/RTRY?node-id=0-1&p=f"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+  </section>
+
+  <section class="section">
+    <h3>결과</h3>
+    <div class="media-vertical">
+      <figure>
+        <img src={gifUI} alt="UI 결과 GIF" />
+        <figcaption class="muted">UI 데모</figcaption>
+      </figure>
+      <figure>
+        <img src={imgUI} alt="UI 결과 스크린샷" />
+        <figcaption class="muted">몬스터의 플레이어 추적 핵심 로직</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <h3>시연</h3>
+    <div class="yt-wrap">
+      <iframe
+        src={`https://www.youtube.com/embed/${youtubeId}`}
+        title="Raid Demo Video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+  </section>
+
+  <section class="section">
+    <h3>프로젝트 회고</h3>
+    <p>
+      <!-- 회고 내용 추가 예정 -->
+    </p>
+  </section>
+
+</main>
+
+<style>
+  :root {
+    --fg: #0f172a; --muted: #6b7280; --line: #eceff3; --card: #ffffff;
+    --shadow: 0 10px 30px rgba(2,6,23,.07); --radius: 14px; --radius-lg: 16px;
+  }
+  .section { padding: 70px 0; }
+  h3 { font-size: 22px; margin: 0 0 20px; position: relative; display: inline-block; padding-right: 8px; }
+  h3::after { content: ""; position: absolute; left: 0; bottom: -8px; height: 3px; width: 32px;
+    background: linear-gradient(90deg, #ffd400, transparent 70%); border-radius: 4px; }
+  h4.sub-heading { font-size: 16px; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .muted { color: var(--muted); }
+  .section p, .section ul { line-height: 1.85; }
+  ul { padding-left: 20px; }
+  ul ul { margin-top: 4px; }
+
+  .detail-hero { width: 100%; max-height: 420px; object-fit: cover;
+    border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+
+  .demo-img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); display: block; }
+  figure { margin: 0; }
+figcaption { margin-top: 10px; font-size: 16px; font-weight: 700; text-align: right; color: var(--muted); }
+
+  .media-grid { display: grid; gap: 24px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .media-grid { grid-template-columns: repeat(2, 1fr); } }
+  .media-grid figure img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); display: block; }
+
+  .yt-wrap { position: relative; width: 100%; aspect-ratio: 16/9;
+    border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); background: #000; }
+  .yt-wrap > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+    .figma-wrap { position: relative; width: 100%; height: 600px;
+    border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+  .figma-wrap > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  .media-vertical { display: flex; flex-direction: column; gap: 32px; }
+  .media-vertical figure { margin: 0; }
+  .media-vertical figure img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); display: block; }
+</style>

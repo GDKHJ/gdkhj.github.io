@@ -1,0 +1,166 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const hero = "/Image/Bird_thumbnail.jpg";
+
+const title  = "Bird";
+const tags   = ["Unity", "3D", "PC"];
+const period = "13주 (팀)";
+
+const codeRoundOver = String.raw`void RoundOver()
+{
+    bool playerBust = playerScript.handValue > 21;
+    bool dealerBust = dealerScript.handValue > 21;
+    bool player21 = playerScript.handValue == 21;
+    bool dealer21 = dealerScript.handValue == 21;
+
+    if (standClicks < 2 && !playerBust && !dealerBust && !player21 && !dealer21) return;
+
+    bool roundOver = true;
+
+    if (playerBust && dealerBust)
+    {
+        mainText.text = "All Bust: Bets returned";
+        playerScript.AdjustMoney(pot / 2);
+    }
+    else if (playerBust || (!dealerBust && dealerScript.handValue > playerScript.handValue))
+    {
+        mainText.text = "Dealer wins!";
+    }
+    else if (dealerBust || playerScript.handValue > dealerScript.handValue)
+    {
+        mainText.text = "You win!";
+        playerScript.AdjustMoney(pot);
+    }
+    else if (playerScript.handValue == dealerScript.handValue)
+    {
+        mainText.text = "Push: Bets returned";
+        playerScript.AdjustMoney(pot / 2);
+    }
+    else
+    {
+        roundOver = false;
+    }
+
+    if (roundOver)
+    {
+        hitBtn.gameObject.SetActive(false);
+        standBtn.gameObject.SetActive(false);
+        dealBtn.gameObject.SetActive(true);
+        mainText.gameObject.SetActive(true);
+        dealerScoreText.gameObject.SetActive(true);
+        hideCard.GetComponent<Renderer>().enabled = false;
+        cashText.text = "$" + playerScript.GetMoney().ToString();
+        standClicks = 0;
+    }
+}`;
+---
+
+<BaseLayout title={`${title} · Projects · 권혁준`} heroTitle={title} heroSub={tags.join(" · ")} />
+
+<main class="container">
+
+  <section class="section">
+    <img src={hero} alt={title} class="detail-hero" />
+  </section>
+
+  <section class="section">
+    <h3>개요</h3>
+    <p>Unity Engine으로 개발한 어드벤처 게임.</p>
+  </section>
+
+  <section class="section">
+    <h3>개발 기간</h3>
+    <p class="muted">{period}</p>
+  </section>
+
+  <section class="section">
+    <h3>주요 기능</h3>
+    <ul>
+      <li>3D</li>
+      <li>각 스테이지 별 미니 게임</li>
+      <li>세이브 및 로드, 이어하기 구현</li>
+      <li>NPC 구현</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h3>담당 파트</h3>
+    <ul>
+      <li>총괄 기획</li>
+      <li>Stage 2</li>
+      <li>UI</li>
+      <li>세이브 시스템</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h3>핵심 코드</h3>
+    <p class="muted">블랙잭 미니게임의 승패 판정 로직입니다.</p>
+    <details class="code-block" open>
+      <summary>GameManager.cs – RoundOver 승패 판정</summary>
+      <pre><code class="language-csharp">{codeRoundOver}</code></pre>
+    </details>
+  </section>
+
+  <section class="section">
+    <h3>기획</h3>
+    <div class="drive-wrap">
+      <iframe
+        src="https://docs.google.com/presentation/d/1Vc-tI8yQRqQ96S4N-zMo5K-V0_1tbwUn/embed?start=false&loop=false"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+  </section>
+
+  <section class="section">
+    <h3>결과</h3>
+    <div class="drive-wrap">
+      <iframe
+        src="https://docs.google.com/presentation/d/1ImRlhHqcfOmGbTEMXgLcRcmObUglBDWa/embed?start=false&loop=false"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+  </section>
+
+    <section class="section">
+    <h3>프로젝트 회고</h3>
+    <p>
+      프로젝트 진행 기간동안 스크럼을 통해 일정관리를 철저히 했음에도 완성하지 못해 아쉬움이 많이 남은 프로젝트입니다. 전체적으로 이전에 비해 완성도가 높아졌으나 UI 그래픽이 없어 완성도가 많이 떨어져 보이는게 아쉬웠습니다. 시간이 더 있었다면 스토리를 수정해서 개연성을 더 추가했을 것 같습니다.
+    </p>
+  </section>
+
+</main>
+
+<style>
+  :root {
+    --fg: #0f172a; --muted: #6b7280; --line: #eceff3; --card: #ffffff;
+    --shadow: 0 10px 30px rgba(2,6,23,.07); --radius: 14px; --radius-lg: 16px;
+  }
+  .section { padding: 70px 0; }
+  h3 { font-size: 22px; margin: 0 0 20px; position: relative; display: inline-block; padding-right: 8px; }
+  h3::after { content: ""; position: absolute; left: 0; bottom: -8px; height: 3px; width: 32px;
+    background: linear-gradient(90deg, #ffd400, transparent 70%); border-radius: 4px; }
+  .muted { color: var(--muted); }
+  .section p, .section ul { line-height: 1.85; }
+  ul { padding-left: 20px; }
+  ul ul { margin-top: 4px; }
+
+  .detail-hero { width: 100%; max-height: 420px; object-fit: cover;
+    border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+
+  .drive-wrap { position: relative; width: 100%; height: 600px;
+    border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+  .drive-wrap > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  details.code-block { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+  details.code-block + details.code-block { margin-top: 16px; }
+  details.code-block > summary { cursor: pointer; padding: 14px 16px; font-weight: 700; list-style: none; position: relative; background: #fafafa; border-bottom: 1px solid var(--line); }
+  details.code-block > summary::-webkit-details-marker { display: none; }
+  details.code-block > summary::after { content: "▾"; position: absolute; right: 14px; top: 12px; font-size: 16px; color: #9aa3af; transition: transform .15s ease; }
+  details[open].code-block > summary::after { transform: rotate(180deg); }
+  details.code-block pre { margin: 0; max-width: 100%; overflow: auto; background: #0b1220; color: #e6edf3; padding: 18px; font-size: 14px; line-height: 1.65; }
+  details.code-block code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+</style>

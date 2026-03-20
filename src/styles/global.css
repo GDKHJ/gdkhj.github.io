@@ -12,10 +12,14 @@ a{color:inherit;text-decoration:none}
 .container{max-width:var(--maxw);margin:0 auto;padding:0 20px}
 
 /* Hero */
-.hero{background:var(--hero)}
-.hero-inner{min-height:160px;display:flex;align-items:center}
+.hero{
+  background-image: url('/Image/Banner.jpg');
+  background-size: cover;
+  background-position: center top;
+}
+.hero-inner{min-height:280px;display:flex;align-items:center}
 .hero-title{font-size:32px;font-weight:800;margin:0}
-.hero-sub{margin-top:6px;color:var(--muted)}
+.hero-sub{margin-top:6px;color:rgba(255,255,255,.8);}
 
 /* Sections */
 .section{padding:60px 0}
